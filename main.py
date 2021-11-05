@@ -10,7 +10,7 @@ from PyQt5.QtGui import QPixmap
 class Example(QMainWindow):
     def __init__(self):
         super().__init__()
-        uic.loadUi('untitled.ui', self)
+        uic.loadUi('style.ui', self)
         self.image1 = Image.open("textures.png").resize((100, 100))
         self.image1.save("temp.png")
         self.pm = QPixmap("temp.png")
