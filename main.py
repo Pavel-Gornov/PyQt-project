@@ -2,14 +2,20 @@ import sys
 from logic import Game
 import random
 from PyQt5 import uic
-from PyQt5.QtWidgets import QApplication, QMainWindow, QLabel, QPushButton
-from PyQt5.QtGui import QPixmap
+from PyQt5.QtWidgets import QApplication, QMainWindow, QLabel, QPushButton, QLCDNumber
+from PyQt5.QtGui import QPixmap, QIcon
+from PyQt5.QtCore import QSize
 
 
 class Example(QMainWindow, Game):
     def __init__(self):
         super().__init__()
         uic.loadUi('style.ui', self)
+        self.titles = ['2^10', '2048', '2048?', '2048: моя версия', 'ДВЕ ТЫСЯЧИ СОРОК ВОСЕМЬ!', '2000 + 40 + 8',
+                       'проект QT!', 'TWO THOUSAND AND FORTY-EIGHT', 'при каждом запуске разноые заголовки!',
+                       '1024 * 2', '2 ** 10', 'игра про сложение плиток.....']
+        self.setFixedSize(501, 785)
+        self.setWindowTitle(random.choice(self.titles))
         self.block = False
         self.temp = QPixmap("0.png")
         self.pm = QPixmap("0.png")
@@ -17,6 +23,10 @@ class Example(QMainWindow, Game):
         self.pmyou = QPixmap("you.png")
         self.pmlose = QPixmap("lose.png")
         self.pmwin = QPixmap("win.png")
+        self.btn_rest.setIcon(QIcon("restart.png"))
+        self.btn_rest.setIconSize(QSize(75, 75))
+        self.btn_setings.setIcon(QIcon("settings.png"))
+        self.btn_setings.setIconSize(QSize(75, 75))
         self.l1.setPixmap(self.pm)
         self.l2.setPixmap(self.pm)
         self.l3.setPixmap(self.pm)
@@ -44,16 +54,19 @@ class Example(QMainWindow, Game):
         self.l6.setPixmap(self.pmyou)
         self.l7.setPixmap(self.pmwin)
         self.block = True
+        self.score()
 
     def lose(self):
         self.l6.setPixmap(self.pmyou)
         self.l7.setPixmap(self.pmlose)
         self.block = True
+        self.score()
 
     def restart(self):
         self.new_game()
         self.vis()
         self.block = False
+        self.score()
 
     def vis(self):
         for i in range(4):
@@ -117,6 +130,7 @@ class Example(QMainWindow, Game):
             self.cover_up()
             self.transpose()
             self.add_tile()
+            self.score()
             if not self.block:
                 self.vis()
 
@@ -131,6 +145,7 @@ class Example(QMainWindow, Game):
             self.reverse()
             self.transpose()
             self.add_tile()
+            self.score()
             if not self.block:
                 self.vis()
 
@@ -141,6 +156,7 @@ class Example(QMainWindow, Game):
             self.merge()
             self.cover_up()
             self.add_tile()
+            self.score()
             if not self.block:
                 self.vis()
 
@@ -153,6 +169,7 @@ class Example(QMainWindow, Game):
             self.cover_up()
             self.reverse()
             self.add_tile()
+            self.score()
             if not self.block:
                 self.vis()
 
@@ -199,6 +216,17 @@ class Example(QMainWindow, Game):
                 tile_x = random.randint(0, len(self.table) - 1)
                 tile_y = random.randint(0, len(self.table) - 1)
             self.table[tile_x][tile_y] = r
+
+    def score(self):
+        score = 0
+        for i in self.table:
+            score += sum(i)
+        self.lcd_score.display(score)
+        self.record()
+
+    def record(self):
+        if self.lcd_score.intValue() > self.lcd_record.intValue():
+            self.lcd_record.display(self.lcd_score.intValue())
 
 
 if __name__ == '__main__':

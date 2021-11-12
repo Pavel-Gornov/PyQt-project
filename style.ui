@@ -262,7 +262,7 @@
      <string/>
     </property>
    </widget>
-   <widget class="QPushButton" name="btn_rest_2">
+   <widget class="QPushButton" name="btn_setings">
     <property name="geometry">
      <rect>
       <x>10</x>
