@@ -1,19 +1,22 @@
 import sys
+import time
 from logic import Game
 import random
 from PyQt5 import uic
-from PyQt5.QtWidgets import QApplication, QMainWindow, QLabel, QPushButton, QLCDNumber
+from PyQt5.QtWidgets import QApplication, QMainWindow, QLabel, QPushButton, QLCDNumber, QDialog, QCheckBox, \
+    QRadioButton, QScrollBar
 from PyQt5.QtGui import QPixmap, QIcon
-from PyQt5.QtCore import QSize
+from PyQt5.QtCore import QSize, Qt
 
 
 class Example(QMainWindow, Game):
     def __init__(self):
         super().__init__()
         uic.loadUi('style.ui', self)
-        self.titles = ['2^10', '2048', '2048?', '2048: моя версия', 'ДВЕ ТЫСЯЧИ СОРОК ВОСЕМЬ!', '2000 + 40 + 8',
+        global savedmap2
+        self.titles = ['2^11', '2048', '2048?', '2048: моя версия', 'ДВЕ ТЫСЯЧИ СОРОК ВОСЕМЬ!', '2000 + 40 + 8',
                        'проект QT!', 'TWO THOUSAND AND FORTY-EIGHT', 'при каждом запуске разноые заголовки!',
-                       '1024 * 2', '2 ** 10', 'игра про сложение плиток.....']
+                       '1024 * 2', '2 ** 11', 'игра про сложение плиток.....']
         self.setFixedSize(501, 785)
         self.setWindowTitle(random.choice(self.titles))
         self.block = False
@@ -44,11 +47,15 @@ class Example(QMainWindow, Game):
         self.l15.setPixmap(self.pm)
         self.l16.setPixmap(self.pm)
         self.lname.setPixmap(self.pm1)
+        self.table = savedmap2
+        self.vis()
+        self.score()
         self.btn_up.clicked.connect(self.move_up)
         self.btn_down.clicked.connect(self.move_down)
         self.btn_left.clicked.connect(self.move_left)
         self.btn_right.clicked.connect(self.move_right)
         self.btn_rest.clicked.connect(self.restart)
+        self.btn_setings.clicked.connect(self.settings)
 
     def win(self):
         self.l6.setPixmap(self.pmyou)
@@ -69,6 +76,20 @@ class Example(QMainWindow, Game):
         self.score()
 
     def vis(self):
+        global is_save
+        global savedmap2
+
+        if is_save:
+            savedmap2 = self.table
+            f1 = open('save.txt', encoding='utf8', mode='wt')
+            f1.write(str(is_save) + '\n')
+            f1.write(str(savedmap2).replace('[', '').replace(']', '').replace(',', ''))
+            f1.close()
+        else:
+            f1 = open('save.txt', encoding='utf8', mode='wt')
+            f1.write(str(is_save) + '\n')
+            f1.write(str('0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0'))
+            f1.close()
         for i in range(4):
             for j in range(4):
                 a = self.table[i][j]
@@ -121,6 +142,16 @@ class Example(QMainWindow, Game):
                 elif n == 15:
                     self.temp = QPixmap(f"{a}.png")
                     self.l16.setPixmap(self.temp)
+
+    def keyPressEvent(self, event):
+        if event.key() == Qt.Key_W:
+            self.move_up()
+        if event.key() == Qt.Key_S:
+            self.move_down()
+        if event.key() == Qt.Key_A:
+            self.move_left()
+        if event.key() == Qt.Key_D:
+            self.move_right()
 
     def move_up(self):
         if not self.block:
@@ -228,8 +259,78 @@ class Example(QMainWindow, Game):
         if self.lcd_score.intValue() > self.lcd_record.intValue():
             self.lcd_record.display(self.lcd_score.intValue())
 
+    def settings(self):
+        global is_auto
+        dialog = Dialog()
+        dialog.exec_()
+        self.vis()
+        if is_auto:
+            self.auto_mode()
+            is_auto = False
+
+    def auto_mode(self):
+        while not self.block:
+            s = random.randint(1, 4)
+            if s == 1:
+                self.move_up()
+            if s == 2:
+                self.move_down()
+            if s == 3:
+                self.move_left()
+            if s == 4:
+                self.move_right()
+
+
+class Dialog(QDialog):
+    def __init__(self):
+        super().__init__()
+        global is_save
+        uic.loadUi('settings.ui', self)
+        self.setFixedSize(400, 300)
+        self.setWindowTitle('Настройки')
+        self.btn_c.clicked.connect(self.ex)
+        self.btn_a.clicked.connect(self.apply)
+        self.save.setChecked(is_save)
+
+    def apply(self):
+        global is_save
+        global is_auto
+        is_auto = self.auto_mode.isChecked()
+        is_save = self.save.isChecked()
+        if not is_save:
+            f1 = open('save.txt', encoding='utf8', mode='wt')
+            f1.write(str(is_save) + '\n')
+            f1.write(str('0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0'))
+            f1.close()
+        self.close()
+
+    a = False
+
+    def ex(self):
+        self.close()
+
 
 if __name__ == '__main__':
+    is_auto = False
+    f = open('save.txt', encoding='utf8')
+    text = f.readlines()
+    f.close()
+    p2 = list()
+    for i in text:
+        p = ''.join(i.split('\n')).split()
+        p2.append(p)
+    if p2[0] == ['False']:
+        is_save = False
+    else:
+        is_save = True
+    savedmap = p2[1::]
+    savedmap = savedmap[0]
+    savedmap2 = [[], [], [], []]
+    c = 0
+    for i in range(4):
+        for j in range(4):
+            savedmap2[i].append(int(savedmap[j + c]))
+        c += 4
     app = QApplication(sys.argv)
     ex = Example()
     ex.show()
