@@ -1,10 +1,10 @@
 import sys
-import time
+import sqlite3
 from logic import Game
 import random
 from PyQt5 import uic
 from PyQt5.QtWidgets import QApplication, QMainWindow, QLabel, QPushButton, QLCDNumber, QDialog, QCheckBox, \
-    QRadioButton, QScrollBar
+    QRadioButton, QScrollBar, QLineEdit
 from PyQt5.QtGui import QPixmap, QIcon
 from PyQt5.QtCore import QSize, Qt
 
@@ -256,17 +256,36 @@ class Example(QMainWindow, Game):
         self.record()
 
     def record(self):
+        global g_record
+        if g_record > self.lcd_record.intValue():
+            self.lcd_record.display(g_record)
+            print(g_record)
+        if g_record < self.lcd_record.intValue():
+            g_record = self.lcd_record.intValue()
         if self.lcd_score.intValue() > self.lcd_record.intValue():
             self.lcd_record.display(self.lcd_score.intValue())
+            con = sqlite3.connect('records')
+            cur = con.cursor()
+            sql = """
+                UPDATE t SET record = :name
+                where name = :name2
+                """
+            cur.execute(sql, {'name': g_record, 'name2': g_name})
+            con.commit()
+            cur.close()
+            con.close()
 
     def settings(self):
         global is_auto
-        dialog = Dialog()
-        dialog.exec_()
-        self.vis()
-        if is_auto:
-            self.auto_mode()
-            is_auto = False
+        try:
+            dialog = Dialog()
+            dialog.exec_()
+            self.vis()
+            if is_auto:
+                self.auto_mode()
+                is_auto = False
+        except Exception as e:
+            print(e)
 
     def auto_mode(self):
         while not self.block:
@@ -288,6 +307,7 @@ class Dialog(QDialog):
         uic.loadUi('settings.ui', self)
         self.setFixedSize(400, 300)
         self.setWindowTitle('Настройки')
+        self.le.setText(g_name)
         self.btn_c.clicked.connect(self.ex)
         self.btn_a.clicked.connect(self.apply)
         self.save.setChecked(is_save)
@@ -295,6 +315,9 @@ class Dialog(QDialog):
     def apply(self):
         global is_save
         global is_auto
+        global g_record
+        global g_name
+        g_name = self.le.text()
         is_auto = self.auto_mode.isChecked()
         is_save = self.save.isChecked()
         if not is_save:
@@ -302,9 +325,42 @@ class Dialog(QDialog):
             f1.write(str(is_save) + '\n')
             f1.write(str('0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0'))
             f1.close()
-        self.close()
 
-    a = False
+        try:
+            con = sqlite3.connect('records')
+            cur = con.cursor()
+            result = cur.execute("""
+            SELECT name FROM t
+            """).fetchall()
+            cur.close()
+            con.close()
+            r = list()
+            for i in result:
+                i = i[0]
+                r.append(i)
+            if not self.le.text() == '' or not self.le.text() == ' ':
+                if self.le.text() in r:
+                    con = sqlite3.connect('records')
+                    cur = con.cursor()
+                    result = cur.execute("SELECT record FROM t WHERE name = ?", (self.le.text(),)).fetchall()
+                    g_record = int(result[0][0])
+                    cur.close()
+                    con.close()
+
+                if self.le.text() not in r:
+                    con = sqlite3.connect('records')
+                    cur = con.cursor()
+                    sql = """
+                    INSERT INTO t (name, record)
+                    VALUES (?, 0)
+                    """
+                    cur.execute(sql, (self.le.text(),))
+                    con.commit()
+                    cur.close()
+                    con.close()
+        except Exception as e:
+            print(e)
+        self.close()
 
     def ex(self):
         self.close()
@@ -312,6 +368,8 @@ class Dialog(QDialog):
 
 if __name__ == '__main__':
     is_auto = False
+    g_record = 0
+    g_name = ''
     f = open('save.txt', encoding='utf8')
     text = f.readlines()
     f.close()
